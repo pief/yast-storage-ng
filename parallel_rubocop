@@ -1,4 +1,4 @@
 #! /bin/bash
 
-rubocop -L | xargs -P`nproc` -n$(expr `rubocop -L | wc -l` / `nproc` + 1) rubocop
+rubocop -L | sort -R | xargs -P`nproc` -n$(expr `rubocop -L | wc -l` / `nproc` + 1) rubocop
 
