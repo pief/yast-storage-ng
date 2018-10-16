@@ -388,6 +388,14 @@ describe Y2Storage::AutoinstProfile::DriveSection do
       end
     end
 
+    context "given a Xen partition" do
+      before { fake_scenario("xen-disks-and-partitions.xml") }
+
+      it "initializes #type to :CT_DISK" do
+        expect(described_class.new_from_storage(device("xvda1")).type).to eq(:CT_DISK)
+      end
+    end
+
     describe "initializing DriveSection#device" do
       let(:dev) { device("sdd") }
 
