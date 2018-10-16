@@ -34,10 +34,12 @@ module Y2Storage
       # @return [Array<Planned::Partition, Planned::StrayBlkDevice>] List of planned partitions or disks
       def planned_devices(drive)
         disk = BlkDevice.find_by_name(devicegraph, drive.device)
-        if disk
-          planned_for_disk(disk, drive)
-        else
+        if disk.nil?
           planned_for_stray_devices(drive)
+        elsif disk.is?(:stray_blk_device)
+          planned_for_stray_device(drive)
+        else
+          planned_for_disk(disk, drive)
         end
       end
 
@@ -106,6 +108,15 @@ module Y2Storage
         end
 
         planned_disk
+      end
+
+      def planned_for_stray_device(drive)
+        master_partition = drive.partitions.first
+        planned_stray_device = Y2Storage::Planned::StrayBlkDevice.new
+        device_config(planned_stray_device, master_partition, drive)
+        planned_stray_device.lvm_volume_group_name = master_partition.lvm_group
+        add_device_reuse(planned_stray_device, drive.device, master_partition)
+        [planned_stray_device]
       end
 
       # Returns an array of planned Xen partitions according to a <drive>

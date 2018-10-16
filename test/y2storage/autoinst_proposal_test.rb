@@ -665,6 +665,7 @@ describe Y2Storage::AutoinstProposal do
     end
 
     describe "with Xen virtual partitions" do
+      let(:scenario) { "xen-partitions.xml" }
       let(:xvda1_sect) do
         {
           "partition_nr" => 1, "create" => false,
@@ -679,40 +680,64 @@ describe Y2Storage::AutoinstProposal do
         }
       end
 
-      let(:xvdc1_sect) do
-        { "filesystem" => :xfs, "mount" => "/home", "size" => "max", "create" => true }
+      let(:partitioning) do
+        [
+          { "device" => "/dev/xvda1", "use" => "all", "partitions" => [xvda1_sect] },
+          { "device" => "/dev/xvda2", "use" => "all", "partitions" => [xvda2_sect] }
+        ]
       end
 
-      context "and no other kind of devices" do
-        let(:scenario) { "xen-partitions.xml" }
+      it "correctly formats all the virtual partitions" do
+        proposal.propose
 
-        let(:partitioning) do
-          [{ "device" => "/dev/xvda", "use" => "all", "partitions" => [xvda1_sect, xvda2_sect] }]
-        end
+        xvda1 = proposal.devices.find_by_name("/dev/xvda1")
+        expect(xvda1.filesystem).to have_attributes(
+          type:       Y2Storage::Filesystems::Type::BTRFS,
+          mount_path: "/"
+        )
+        xvda2 = proposal.devices.find_by_name("/dev/xvda2")
+        expect(xvda2.filesystem).to have_attributes(
+          type:       Y2Storage::Filesystems::Type::SWAP,
+          mount_path: "swap"
+        )
+      end
 
-        it "does not register any issue" do
-          proposal.propose
-          expect(issues_list).to be_empty
-        end
+      context "grouping all partitions into a single 'drive' (old style)" do
+        context "and no other kind of devices" do
+          let(:scenario) { "xen-partitions.xml" }
 
-        it "correctly formats all the virtual partitions" do
-          proposal.propose
+          let(:partitioning) do
+            [{ "device" => "/dev/xvda", "use" => "all", "partitions" => [xvda1_sect, xvda2_sect] }]
+          end
 
-          xvda1 = proposal.devices.find_by_name("/dev/xvda1")
-          expect(xvda1.filesystem).to have_attributes(
-            type:       Y2Storage::Filesystems::Type::BTRFS,
-            mount_path: "/"
-          )
-          xvda2 = proposal.devices.find_by_name("/dev/xvda2")
-          expect(xvda2.filesystem).to have_attributes(
-            type:       Y2Storage::Filesystems::Type::SWAP,
-            mount_path: "swap"
-          )
+          it "does not register any issue" do
+            proposal.propose
+            expect(issues_list).to be_empty
+          end
+
+          it "correctly formats all the virtual partitions" do
+            proposal.propose
+
+            xvda1 = proposal.devices.find_by_name("/dev/xvda1")
+            expect(xvda1.filesystem).to have_attributes(
+              type:       Y2Storage::Filesystems::Type::BTRFS,
+              mount_path: "/"
+            )
+            xvda2 = proposal.devices.find_by_name("/dev/xvda2")
+            expect(xvda2.filesystem).to have_attributes(
+              type:       Y2Storage::Filesystems::Type::SWAP,
+              mount_path: "swap"
+            )
+          end
         end
       end
 
       context "and Xen hard disks" do
         let(:scenario) { "xen-disks-and-partitions.xml" }
+
+        let(:xvdc1_sect) do
+          { "filesystem" => :xfs, "mount" => "/home", "size" => "max", "create" => true }
+        end
 
         let(:partitioning) do
           [

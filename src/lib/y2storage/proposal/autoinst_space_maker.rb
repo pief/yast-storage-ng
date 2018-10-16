@@ -98,7 +98,9 @@ module Y2Storage
         return if drive_spec.use == "free"
         case drive_spec.use
         when "all"
-          delete_partitions(devicegraph, disk.partitions, reused_parts) if disk.partition_table
+          if disk.respond_to?(:partition_table) && disk.partition_table
+            delete_partitions(devicegraph, disk.partitions, reused_parts)
+          end
         when "linux"
           delete_linux_partitions(devicegraph, disk, reused_parts)
         when Array
