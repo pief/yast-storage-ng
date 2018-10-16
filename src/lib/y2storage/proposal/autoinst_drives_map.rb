@@ -186,7 +186,7 @@ module Y2Storage
       def find_disk(devicegraph, device_name)
         device = devicegraph.find_by_any_name(device_name)
         return nil unless device
-        ([device] + device.ancestors).find { |d| d.is?(:disk_device) }
+        ([device] + device.ancestors).find { |d| d.is?(:disk_device, :stray_blk_device) }
       end
 
       # Whether the given <drive> section represents a set of Xen virtual
