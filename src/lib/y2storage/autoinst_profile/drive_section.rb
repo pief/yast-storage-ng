@@ -164,6 +164,8 @@ module Y2Storage
           init_from_md(device)
         elsif device.is?(:lvm_vg)
           init_from_vg(device)
+        elsif device.is?(:stray_blk_device)
+          init_from_stray_blk_device(device)
         else
           init_from_disk(device)
         end
@@ -222,6 +224,18 @@ module Y2Storage
       end
 
     protected
+
+      def init_from_stray_blk_device(device)
+        #return false unless used?(device)
+
+        @type = :CT_DISK
+        @device = device.name
+        @enabled_snapshots = enabled_snapshots?([device.filesystem]) if device.filesystem
+        @use = "all"
+        @partitions = [PartitionSection.new_from_storage(device)]
+
+        true
+      end
 
       # Method used by {.new_from_storage} to populate the attributes when
       # cloning a disk or DASD device.
@@ -427,7 +441,11 @@ module Y2Storage
       # @param disk [Array<Y2Storage::Disk,Y2Storage::Dasd>] Disk to check whether it is used
       # @return [Boolean] true if the disk is being used
       def used?(disk)
-        !(disk.partitions.empty? && disk.component_of.empty?)
+        !(disk.filesystem.nil? && !partitions?(disk) && disk.component_of.empty?)
+      end
+
+      def partitions?(device)
+        device.respond_to?(:partitions) && !device.partitions.empty?
       end
 
       # Return the disklabel value for the given disk
