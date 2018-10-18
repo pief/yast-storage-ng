@@ -201,11 +201,6 @@ describe Y2Storage::AutoinstProposal do
     end
 
     RSpec.shared_examples "no partitionable error" do
-      it "fails to make a proposal" do
-        proposal.propose
-        expect(proposal.failed?).to eq true
-      end
-
       it "registers an AutoinstIssues::NoPartitionable error" do
         proposal.propose
         expect(issues_list).to_not be_empty
@@ -294,7 +289,7 @@ describe Y2Storage::AutoinstProposal do
         context "with disklabel set to some partition table type" do
           let(:disklabel) { "gpt" }
 
-          include_examples "raise no partitionable error"
+          include_examples "no partitionable error"
         end
 
         context "with disklabel set to 'none'" do
