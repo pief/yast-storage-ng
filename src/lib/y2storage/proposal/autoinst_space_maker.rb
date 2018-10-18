@@ -95,12 +95,10 @@ module Y2Storage
       # @param drive_spec   [AutoinstProfile::DriveSection]
       # @param reused_parts [Array<String>] Reused partitions names
       def delete_by_use(devicegraph, disk, drive_spec, reused_parts)
-        return if drive_spec.use == "free"
+        return if drive_spec.use == "free" || !disk.respond_to?(:partition_table)
         case drive_spec.use
         when "all"
-          if disk.respond_to?(:partition_table) && disk.partition_table
-            delete_partitions(devicegraph, disk.partitions, reused_parts)
-          end
+          delete_partitions(devicegraph, disk.partitions, reused_parts) if disk.partition_table
         when "linux"
           delete_linux_partitions(devicegraph, disk, reused_parts)
         when Array

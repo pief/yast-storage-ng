@@ -29,6 +29,13 @@ module Y2Storage
       # Returns an array of planned partitions for a given disk or the disk
       # itself if there are no partitions planned
       #
+      # It supports three different kind of specifications:
+      #
+      # * Old Xen partitioning, which relies in a non-existent device to group similar ones
+      #   (for instance, `/dev/xvda` to group `/dev/xvda1`, `/dev/xvda2`, etc.).
+      # * New Xen partitioning, which uses stray block devices.
+      # * Regular disks.
+      #
       # @param drive [AutoinstProfile::DriveSection] drive section describing
       #   the layout for the disk
       # @return [Array<Planned::Partition, Planned::StrayBlkDevice>] List of planned partitions or disks
@@ -84,6 +91,7 @@ module Y2Storage
       # @note The part argument is used when we emulate the sle12 behavior to
       #   have partition 0 mean the full disk.
       def planned_for_full_disk(drive, part)
+        issues_list.add(:surplus_partitions, drive) if drive.partitions.size > 1
         planned_disk = Y2Storage::Planned::Disk.new
         device_config(planned_disk, part, drive)
         planned_disk.lvm_volume_group_name = part.lvm_group
@@ -111,6 +119,8 @@ module Y2Storage
       end
 
       def planned_for_stray_device(drive)
+        issues_list.add(:no_partitionable, drive) if drive.disklabel && drive.partition_table?
+        issues_list.add(:surplus_partitions, drive) if drive.partitions.size > 1
         master_partition = drive.partitions.first
         planned_stray_device = Y2Storage::Planned::StrayBlkDevice.new
         device_config(planned_stray_device, master_partition, drive)
